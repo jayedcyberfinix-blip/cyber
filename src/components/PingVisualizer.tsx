@@ -15,7 +15,9 @@ import {
   Layers, 
   Cpu, 
   Zap,
-  Sliders
+  Sliders,
+  Laptop,
+  Server
 } from 'lucide-react';
 import { Language } from '../types/network';
 
@@ -33,11 +35,20 @@ interface PingLine {
   isLoss?: boolean;
 }
 
+export type FlightStage = 'IDLE' | 'REQUEST' | 'PROCESSING' | 'REPLY' | 'DROPPED' | 'UNREACHABLE';
+
 export const PingVisualizer: React.FC<PingVisualizerProps> = ({ lang }) => {
   const [targetIp, setTargetIp] = useState('192.168.1.254');
   const [pingCount, setPingCount] = useState(6);
   const [isPinging, setIsPinging] = useState(false);
   const [simScenario, setSimScenario] = useState<'normal' | 'timeout' | 'unreachable' | 'spike'>('normal');
+
+  // Live animated flight states
+  const [flightStage, setFlightStage] = useState<FlightStage>('IDLE');
+  const [currentFlyingSeq, setCurrentFlyingSeq] = useState<number>(1);
+  const [currentFlyingLatency, setCurrentFlyingLatency] = useState<number>(2.18);
+  const [flightProgress, setFlightProgress] = useState<number>(0); // 0 to 100%
+  const [isSpikeDelayActive, setIsSpikeDelayActive] = useState<boolean>(false);
 
   // Terminal Output State
   const [terminalLines, setTerminalLines] = useState<string[]>([]);
@@ -61,6 +72,9 @@ export const PingVisualizer: React.FC<PingVisualizerProps> = ({ lang }) => {
   const loadExactScreenshotData = () => {
     setIsPinging(false);
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    setFlightStage('IDLE');
+    setFlightProgress(0);
+    setIsSpikeDelayActive(false);
 
     setTargetIp('192.168.1.254');
     const screenshotLines = [
@@ -106,7 +120,7 @@ export const PingVisualizer: React.FC<PingVisualizerProps> = ({ lang }) => {
     loadExactScreenshotData();
   }, []);
 
-  // Live Ping Simulator Execution
+  // Live Ping Simulator Execution with real-time animated packet flight
   const executeLivePing = () => {
     setIsPinging(true);
     setTerminalLines([
@@ -115,6 +129,8 @@ export const PingVisualizer: React.FC<PingVisualizerProps> = ({ lang }) => {
     ]);
     setPingRecords([]);
     setStats(null);
+    setFlightStage('IDLE');
+    setFlightProgress(0);
 
     let currentSeq = 1;
     const records: PingLine[] = [];
@@ -124,6 +140,10 @@ export const PingVisualizer: React.FC<PingVisualizerProps> = ({ lang }) => {
       if (currentSeq > pingCount) {
         // Complete
         setIsPinging(false);
+        setFlightStage('IDLE');
+        setFlightProgress(0);
+        setIsSpikeDelayActive(false);
+
         const received = records.filter(r => !r.isLoss).length;
         const lossPercent = Math.round(((pingCount - received) / pingCount) * 100);
         const totalDuration = (pingCount - 1) * 1000 + (rttTimes.length > 0 ? rttTimes[rttTimes.length - 1] : 0) + 8;
@@ -159,47 +179,82 @@ export const PingVisualizer: React.FC<PingVisualizerProps> = ({ lang }) => {
         return;
       }
 
-      // Generate latency based on scenario
+      // Calculate latency
       let timeMs = 2.0 + Math.random() * 2.5; // ~2-4ms
       let ttl = 63;
       let isLoss = false;
       let lineText = '';
 
-      if (simScenario === 'timeout') {
-        isLoss = true;
-        lineText = `Request timeout for icmp_seq ${currentSeq}`;
-      } else if (simScenario === 'unreachable') {
-        isLoss = true;
-        lineText = `From 192.168.1.1 icmp_seq=${currentSeq} Destination Host Unreachable`;
-      } else if (simScenario === 'spike' && currentSeq === 5) {
+      if (simScenario === 'spike' && currentSeq === 5) {
         timeMs = 10.3; // mimic spike in screenshot
-        lineText = `64 bytes from ${targetIp}: icmp_seq=${currentSeq} ttl=${ttl} time=${timeMs.toFixed(2)} ms`;
-        rttTimes.push(timeMs);
-      } else {
-        if (currentSeq === 5) timeMs = 10.3;
-        lineText = `64 bytes from ${targetIp}: icmp_seq=${currentSeq} ttl=${ttl} time=${timeMs.toFixed(2)} ms`;
-        rttTimes.push(timeMs);
+      } else if (currentSeq === 5 && simScenario === 'normal') {
+        timeMs = 10.3;
       }
 
-      const record: PingLine = {
-        seq: currentSeq,
-        bytes: 64,
-        ip: targetIp,
-        ttl,
-        timeMs,
-        rawText: lineText,
-        isLoss
+      setCurrentFlyingSeq(currentSeq);
+      setCurrentFlyingLatency(Number(timeMs.toFixed(2)));
+
+      // Step 1: Echo Request (0 -> 100%)
+      setFlightStage('REQUEST');
+      setFlightProgress(20);
+      setIsSpikeDelayActive(currentSeq === 5);
+
+      setTimeout(() => {
+        setFlightProgress(75);
+      }, 200);
+
+      setTimeout(() => {
+        setFlightProgress(100);
+
+        if (simScenario === 'timeout') {
+          // Packet dropped at router firewall
+          setFlightStage('DROPPED');
+          isLoss = true;
+          lineText = `Request timeout for icmp_seq ${currentSeq}`;
+          finishLine(lineText, isLoss, timeMs, ttl);
+        } else if (simScenario === 'unreachable') {
+          setFlightStage('UNREACHABLE');
+          isLoss = true;
+          lineText = `From 192.168.1.1 icmp_seq=${currentSeq} Destination Host Unreachable`;
+          finishLine(lineText, isLoss, timeMs, ttl);
+        } else {
+          // Router received! Turn into Echo Reply
+          setFlightStage('PROCESSING');
+          setTimeout(() => {
+            setFlightStage('REPLY');
+            setFlightProgress(50);
+
+            setTimeout(() => {
+              setFlightProgress(0);
+              lineText = `64 bytes from ${targetIp}: icmp_seq=${currentSeq} ttl=${ttl} time=${timeMs.toFixed(2)} ms`;
+              rttTimes.push(timeMs);
+              finishLine(lineText, false, timeMs, ttl);
+            }, 300);
+          }, 150);
+        }
+      }, currentSeq === 5 ? 550 : 350);
+
+      const finishLine = (text: string, loss: boolean, latency: number, hopTtl: number) => {
+        const record: PingLine = {
+          seq: currentSeq,
+          bytes: 64,
+          ip: targetIp,
+          ttl: hopTtl,
+          timeMs: latency,
+          rawText: text,
+          isLoss: loss
+        };
+
+        records.push(record);
+        setPingRecords([...records]);
+        setTerminalLines(prev => [...prev, text]);
+
+        currentSeq++;
+        timeoutRef.current = setTimeout(sendNext, 450);
       };
-
-      records.push(record);
-      setPingRecords([...records]);
-      setTerminalLines(prev => [...prev, lineText]);
-
-      currentSeq++;
-      timeoutRef.current = setTimeout(sendNext, 850);
     };
 
-    timeoutRef.current = setTimeout(sendNext, 400);
+    timeoutRef.current = setTimeout(sendNext, 250);
   };
 
   const tokenExplanations: Record<string, {
@@ -297,6 +352,145 @@ export const PingVisualizer: React.FC<PingVisualizerProps> = ({ lang }) => {
             >
               {lang === 'en' ? 'Load Screenshot Data' : 'স্ক্রিনশটের ডাটা লোড করুন'}
             </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Live Physical Network Cable & Packet Flight Canvas */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg space-y-4">
+        <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+          <div className="flex items-center gap-2">
+            <Radio className="w-4 h-4 text-emerald-400 animate-pulse" />
+            <h2 className="text-xs font-bold text-white uppercase tracking-wider">
+              {lang === 'en' ? 'Live Physical Packet Flight & ICMP Transmission Wire' : 'লাইভ প্যাকেট ফ্লাইট ও ফিজিক্যাল ওয়্যার ট্রান্সমিশন সিমুলেটর'}
+            </h2>
+          </div>
+
+          <div className="flex items-center gap-2 text-xs font-mono">
+            <span className="text-slate-400">Flight Status:</span>
+            <span className={`font-bold px-2 py-0.5 rounded text-[10px] ${
+              flightStage === 'REQUEST' ? 'bg-cyan-950 text-cyan-400 border border-cyan-800 animate-pulse' :
+              flightStage === 'PROCESSING' ? 'bg-amber-950 text-amber-400 border border-amber-800' :
+              flightStage === 'REPLY' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' :
+              flightStage === 'DROPPED' ? 'bg-rose-950 text-rose-400 border border-rose-800' :
+              flightStage === 'UNREACHABLE' ? 'bg-amber-950 text-amber-400 border border-amber-800' :
+              'bg-slate-950 text-slate-400 border border-slate-800'
+            }`}>
+              {flightStage === 'REQUEST' ? `ICMP Type 8 Echo Request (Seq=${currentFlyingSeq})` :
+               flightStage === 'PROCESSING' ? `Target Verifying Checksum...` :
+               flightStage === 'REPLY' ? `ICMP Type 0 Echo Reply (${currentFlyingLatency} ms)` :
+               flightStage === 'DROPPED' ? 'DROP: Firewall Blocked ICMP' :
+               flightStage === 'UNREACHABLE' ? 'ARP FAILED: Host Unreachable' :
+               'WIRE READY (IDLE)'}
+            </span>
+          </div>
+        </div>
+
+        {/* The Animated Wire Track */}
+        <div className="relative py-6 px-4 bg-slate-950 rounded-xl border border-slate-800/80 overflow-hidden">
+          <div className="flex items-center justify-between relative z-10">
+            {/* Host Laptop (Left) */}
+            <div className="flex flex-col items-center text-center space-y-1 w-32 shrink-0">
+              <div className="w-12 h-12 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center text-cyan-400 shadow-lg">
+                <Laptop className="w-6 h-6" />
+              </div>
+              <span className="text-xs font-bold text-white font-mono">Host Laptop</span>
+              <span className="text-[10px] font-mono text-slate-400">192.168.1.105</span>
+              <span className="text-[9px] px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono">
+                Source Node
+              </span>
+            </div>
+
+            {/* Glowing Cable & Moving Packet Orb */}
+            <div className="flex-1 mx-6 relative h-12 flex items-center">
+              {/* Cable Line */}
+              <div className="w-full h-1.5 rounded-full bg-slate-800 relative overflow-hidden">
+                <div className={`h-full ${
+                  isPinging ? 'bg-gradient-to-r from-cyan-500 via-emerald-400 to-cyan-500 animate-pulse' : 'bg-slate-700'
+                }`} />
+              </div>
+
+              {/* Jitter Spike Warning badge when Packet 5 flies! */}
+              {isSpikeDelayActive && (
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 px-2.5 py-1 rounded bg-amber-950 border border-amber-500 text-amber-300 text-[10px] font-mono font-bold animate-bounce shadow-lg z-20 whitespace-nowrap">
+                  ⚠️ Radio Jitter Delay (Packet #5: 10.3 ms Spike!)
+                </div>
+              )}
+
+              {/* The Flying Packet Orb */}
+              {flightStage !== 'IDLE' && (
+                <div
+                  className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 transition-all duration-300 z-10"
+                  style={{
+                    left: `${Math.min(95, Math.max(5, flightProgress))}%`
+                  }}
+                >
+                  <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full shadow-xl font-mono text-[10px] font-bold border ${
+                    flightStage === 'REQUEST' ? 'bg-cyan-500 text-slate-950 border-cyan-300 shadow-cyan-500/50' :
+                    flightStage === 'REPLY' ? 'bg-emerald-400 text-slate-950 border-emerald-200 shadow-emerald-400/50' :
+                    flightStage === 'DROPPED' ? 'bg-rose-600 text-white border-rose-400 shadow-rose-600/50' :
+                    'bg-amber-500 text-slate-950 border-amber-300'
+                  }`}>
+                    <Zap className="w-3 h-3 fill-current" />
+                    <span>
+                      {flightStage === 'REQUEST' ? `Echo Req #${currentFlyingSeq}` :
+                       flightStage === 'REPLY' ? `Echo Rep #${currentFlyingSeq} (${currentFlyingLatency}ms)` :
+                       flightStage === 'DROPPED' ? 'BLOCKED ❌' : 'ARP ?'}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Target Gateway Router (Right) */}
+            <div className="flex flex-col items-center text-center space-y-1 w-32 shrink-0">
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg transition-all ${
+                flightStage === 'PROCESSING'
+                  ? 'bg-emerald-950 border-2 border-emerald-400 text-emerald-300 shadow-emerald-500/30'
+                  : 'bg-slate-900 border border-slate-700 text-emerald-400'
+              }`}>
+                <Server className="w-6 h-6" />
+              </div>
+              <span className="text-xs font-bold text-white font-mono">Gateway Router</span>
+              <span className="text-[10px] font-mono text-emerald-400 font-bold">{targetIp}</span>
+              <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono">
+                Target Node
+              </span>
+            </div>
+          </div>
+
+          {/* Real-time RTT Histogram Chart */}
+          <div className="mt-4 pt-3 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+            <span className="text-slate-400 text-[11px]">
+              RTT Histogram (Packet Latency in ms):
+            </span>
+
+            <div className="flex items-end gap-2 h-14">
+              {pingRecords.map((pkt) => {
+                const heightPercent = Math.min(100, Math.max(15, (pkt.timeMs / 12) * 100));
+                const isSpike = pkt.timeMs >= 8;
+                return (
+                  <div key={pkt.seq} className="flex flex-col items-center gap-1">
+                    <span className={`text-[9px] font-bold ${isSpike ? 'text-amber-400' : 'text-slate-400'}`}>
+                      {pkt.isLoss ? 'DROP' : `${pkt.timeMs}ms`}
+                    </span>
+                    <div
+                      className={`w-6 rounded-t transition-all ${
+                        pkt.isLoss ? 'bg-rose-500 h-2' :
+                        isSpike ? 'bg-amber-400 shadow-md shadow-amber-500/30' : 'bg-emerald-400'
+                      }`}
+                      style={{ height: `${pkt.isLoss ? 8 : heightPercent}%` }}
+                    />
+                    <span className="text-[9px] text-slate-500">#{pkt.seq}</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="text-right text-[11px] text-slate-400">
+              <div>Transmitted: <strong className="text-white">{pingRecords.length} / {pingCount}</strong></div>
+              <div>Loss: <strong className="text-emerald-400">{stats ? `${stats.lossPercent}%` : '0%'}</strong></div>
+            </div>
           </div>
         </div>
       </div>
