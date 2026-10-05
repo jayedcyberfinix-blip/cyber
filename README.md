@@ -126,5 +126,10 @@ Every module comes with dual-language support for Bangladeshi and international 
 
 ---
 
+## 👨‍💻 Author & Credits
+Created with ❤️ by **Jayed** (`jayedcyberfinix@gmail.com`).
+
+---
+
 ## 📄 License
 This project is open-source and available under the [MIT License](LICENSE).

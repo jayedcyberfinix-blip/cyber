@@ -221,8 +221,15 @@ export default function App() {
       {/* Footer */}
       <footer className="border-t border-slate-900 bg-slate-950/80 text-slate-500 text-xs py-4 px-6 mt-auto">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
-          <div>
-            <span className="font-semibold text-slate-400">NetSim Pro v2.4</span> • {lang === 'en' ? 'Interactive Networking & Cyber Defense Simulator' : 'ওএসআই মডেল ও নেটওয়ার্ক ট্রাফিক সিমুলেটর'}
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+            <span className="font-semibold text-slate-400">NetSim Pro v2.4</span>
+            <span className="text-slate-700">•</span>
+            <span>{lang === 'en' ? 'Interactive Networking & Cyber Defense Simulator' : 'ওএসআই মডেল ও নেটওয়ার্ক ট্রাফিক সিমুলেটর'}</span>
+            <span className="text-slate-700">•</span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-900 border border-slate-800 text-slate-300 font-medium shadow-sm">
+              <span>Created by</span>
+              <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">Jayed</span>
+            </span>
           </div>
           <div className="flex items-center gap-4 text-[11px]">
             <span>RFC 791 / 793 / 8200 Compliant</span>
