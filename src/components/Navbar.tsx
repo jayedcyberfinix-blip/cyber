@@ -19,7 +19,6 @@ import {
 import { Language } from '../types/network';
 
 export type ActiveTab = 
-  | 'cyber_tools'
   | 'terminal_practice'
   | 'linux'
   | 'ping'
@@ -55,7 +54,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   packetRate
 }) => {
   const tabs = [
-    { id: 'cyber_tools' as ActiveTab, icon: ShieldAlert, labelEn: 'Cyber Security Tools', labelBn: 'সাইবার সিকিউরিটি টুলস গাইড' },
     { id: 'terminal_practice' as ActiveTab, icon: Terminal, labelEn: 'Terminal Practice Lab', labelBn: 'টার্মিনাল প্র্যাকটিস ল্যাব' },
     { id: 'linux' as ActiveTab, icon: Trophy, labelEn: 'Linux Handbook', labelBn: 'লিনাক্স কমান্ড গাইড' },
     { id: 'ping' as ActiveTab, icon: Activity, labelEn: 'Ping & ICMP Inspector', labelBn: 'পিং ও ICMP ডায়াগনস্টিক' },

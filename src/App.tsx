@@ -13,7 +13,6 @@ import { MacSpoofing } from './components/MacSpoofing';
 import { HotspotIpConflict } from './components/HotspotIpConflict';
 import { PingVisualizer } from './components/PingVisualizer';
 import { LinuxHandbook } from './components/LinuxHandbook';
-import { CyberSecurityGuide } from './components/CyberSecurityGuide';
 import { LinuxTerminalPractice } from './components/LinuxTerminalPractice';
 import { Language, Packet, NetworkProtocol, PacketStatus } from './types/network';
 
@@ -195,9 +194,6 @@ export default function App() {
 
       {/* Main Workspace Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 space-y-6">
-        {activeTab === 'cyber_tools' && (
-          <CyberSecurityGuide lang={lang} onSendToTerminal={handleSendToTerminal} />
-        )}
         {activeTab === 'terminal_practice' && (
           <LinuxTerminalPractice lang={lang} initialCommand={terminalInitialCmd} />
         )}

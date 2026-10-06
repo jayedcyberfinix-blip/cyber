@@ -12,7 +12,13 @@
 
 ## 🚀 Features Overview
 
-### 1. 🐧 Linux Essential Commands & Troubleshooting Handbook
+### 1. 💻 Linux Interactive Bash Terminal & Practice Lab
+- **In-Memory Virtual Filesystem**: Live directory navigation and file manipulation (`ls`, `cd`, `pwd`, `cat`, `touch`, `mkdir`, `rm`, `grep`, `head`, `tail`, `wc`, `echo "text" > file`).
+- **Live Network Commands**: `ping 8.8.8.8`, `ifconfig`, `ip a / link / route`, `arp -a`, `macchanger -r eth0`, `traceroute`, `curl`, `wget`, `netstat`, `ss`, `iptables -L`.
+- **Hands-on Quests & Auto-solve**: 10 real-world practice challenges covering file inspection, searching, secret flag hunting, and network reconnaissance.
+- **Quick Click Bar**: Instant execution of essential networking and security diagnostics.
+
+### 2. 🐧 Linux Essential Commands & Troubleshooting Handbook
 - **Interactive Bash Sandbox**: Real-time interactive simulated terminal with color-coded syntax (`pwd`, `ls -la`, `cat`, `head -n 5`, `tail -f`, `grep`, `chmod`, `nmap`, `ps aux`, `df -h`, `free -m`).
 - **File System Hierarchy**: Visual interactive map of `/`, `/home`, `/etc`, `/var`, `/tmp`, `/bin`.
 - **Text Editors & Shortcuts**: Nano, Vim, and Gedit guides with interactive in-terminal Nano simulator (`Ctrl+O`, `Ctrl+X`, `Ctrl+K`).
