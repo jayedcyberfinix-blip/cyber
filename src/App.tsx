@@ -12,6 +12,9 @@ import { NetworkTypesGuide } from './components/NetworkTypesGuide';
 import { MacSpoofing } from './components/MacSpoofing';
 import { HotspotIpConflict } from './components/HotspotIpConflict';
 import { PingVisualizer } from './components/PingVisualizer';
+import { LinuxHandbook } from './components/LinuxHandbook';
+import { CyberSecurityGuide } from './components/CyberSecurityGuide';
+import { LinuxTerminalPractice } from './components/LinuxTerminalPractice';
 import { Language, Packet, NetworkProtocol, PacketStatus } from './types/network';
 
 // Initial synthetic packets
@@ -83,6 +86,12 @@ export default function App() {
   const [isTrafficRunning, setIsTrafficRunning] = useState<boolean>(true);
   const [livePackets, setLivePackets] = useState<Packet[]>(INITIAL_PACKETS);
   const [packetRate, setPacketRate] = useState<number>(4);
+  const [terminalInitialCmd, setTerminalInitialCmd] = useState<string | undefined>(undefined);
+
+  const handleSendToTerminal = (command: string) => {
+    setTerminalInitialCmd(command);
+    setActiveTab('terminal_practice');
+  };
 
   // Background Traffic Generator
   useEffect(() => {
@@ -186,6 +195,15 @@ export default function App() {
 
       {/* Main Workspace Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 space-y-6">
+        {activeTab === 'cyber_tools' && (
+          <CyberSecurityGuide lang={lang} onSendToTerminal={handleSendToTerminal} />
+        )}
+        {activeTab === 'terminal_practice' && (
+          <LinuxTerminalPractice lang={lang} initialCommand={terminalInitialCmd} />
+        )}
+        {activeTab === 'linux' && (
+          <LinuxHandbook lang={lang} onOpenTerminal={(cmd) => handleSendToTerminal(cmd || 'help')} />
+        )}
         {activeTab === 'ping' && <PingVisualizer lang={lang} />}
         {activeTab === 'osi' && <OSISimulator lang={lang} />}
         {activeTab === 'net_types' && <NetworkTypesGuide lang={lang} />}

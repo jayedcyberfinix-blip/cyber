@@ -12,7 +12,14 @@
 
 ## 🚀 Features Overview
 
-### 1. 🏓 Ping & ICMP Deep-Dive Simulator (Screenshot Breakdown)
+### 1. 🐧 Linux Essential Commands & Troubleshooting Handbook
+- **Interactive Bash Sandbox**: Real-time interactive simulated terminal with color-coded syntax (`pwd`, `ls -la`, `cat`, `head -n 5`, `tail -f`, `grep`, `chmod`, `nmap`, `ps aux`, `df -h`, `free -m`).
+- **File System Hierarchy**: Visual interactive map of `/`, `/home`, `/etc`, `/var`, `/tmp`, `/bin`.
+- **Text Editors & Shortcuts**: Nano, Vim, and Gedit guides with interactive in-terminal Nano simulator (`Ctrl+O`, `Ctrl+X`, `Ctrl+K`).
+- **Cyber Security Utilities**: Nmap, Netcat listeners, TCPDump, Gobuster, Hydra, Nikto with realistic outputs.
+- **Troubleshooting Guide**: Solutions and one-click fixes for `Destination path already exists`, `Could not get lock /var/lib/dpkg/lock-frontend`, and `Command not found`.
+
+### 2. 🏓 Ping & ICMP Deep-Dive Simulator (Screenshot Breakdown)
 - **Direct Terminal Dissection**: Line-by-line explanation of Linux `ping 192.168.1.254`.
 - **56(84) Bytes Header Math**: 56B payload + 8B ICMP header + 20B IPv4 header = 84B on the wire.
 - **TTL=63 Explained**: How router hops decrement TTL (Initial 64 - 1 hop = 63).

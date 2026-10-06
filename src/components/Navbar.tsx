@@ -12,13 +12,18 @@ import {
   Pause, 
   Languages,
   Network,
-  Terminal 
+  Terminal,
+  Shield,
+  Trophy 
 } from 'lucide-react';
 import { Language } from '../types/network';
 
 export type ActiveTab = 
-  | 'osi' 
+  | 'cyber_tools'
+  | 'terminal_practice'
+  | 'linux'
   | 'ping'
+  | 'osi' 
   | 'net_types'
   | 'mac_spoof'
   | 'hotspot_conflict'
@@ -50,7 +55,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   packetRate
 }) => {
   const tabs = [
-    { id: 'ping' as ActiveTab, icon: Terminal, labelEn: 'Ping & ICMP Inspector', labelBn: 'পিং ও ICMP ডায়াগনস্টিক' },
+    { id: 'cyber_tools' as ActiveTab, icon: ShieldAlert, labelEn: 'Cyber Security Tools', labelBn: 'সাইবার সিকিউরিটি টুলস গাইড' },
+    { id: 'terminal_practice' as ActiveTab, icon: Terminal, labelEn: 'Terminal Practice Lab', labelBn: 'টার্মিনাল প্র্যাকটিস ল্যাব' },
+    { id: 'linux' as ActiveTab, icon: Trophy, labelEn: 'Linux Handbook', labelBn: 'লিনাক্স কমান্ড গাইড' },
+    { id: 'ping' as ActiveTab, icon: Activity, labelEn: 'Ping & ICMP Inspector', labelBn: 'পিং ও ICMP ডায়াগনস্টিক' },
     { id: 'osi' as ActiveTab, icon: Layers, labelEn: 'OSI 7 Layers', labelBn: 'OSI ৭ লেয়ার সিমুলেশন' },
     { id: 'net_types' as ActiveTab, icon: Network, labelEn: 'PAN, LAN, MAN, WAN', labelBn: 'PAN / LAN / MAN / WAN' },
     { id: 'mac_spoof' as ActiveTab, icon: Cpu, labelEn: 'MAC & Spoofing', labelBn: 'ম্যাক ও স্পুফিং (ছদ্মবেশ)' },
@@ -80,6 +88,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </span>
                 <span className="px-1.5 py-0.5 text-[10px] font-semibold tracking-wider uppercase rounded bg-cyan-950 text-cyan-300 border border-cyan-800">
                   NOC v2.4
+                </span>
+                <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-slate-900 border border-slate-700/80 text-slate-300">
+                  <span className="text-slate-400">by</span>
+                  <span className="font-bold text-cyan-400">Jayed</span>
                 </span>
               </div>
               <p className="text-xs text-slate-400 hidden sm:block">
